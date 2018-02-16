@@ -16,9 +16,10 @@ This script will mount the shared drive and userdrive to the user's computer
 This script will preform the following opperations:
 * Ask for root. (required for some operations)
 * Ask user for information
-* Create directories: /mnt/udrive /mnt/sdrive for mount points
 * Create a credential file at /home/$USER/.ui-smbcredentials for storying your ui username and password
+* Create directories: /mnt/udrive /mnt/sdrive for mount points
 * Change permissions on that file to be only viewable by root for security
+* Install cifs_utils. (required for mounting window's shares)
 * Add a configuration line in /etc/fstab for mounting the drives"
 
 
@@ -49,8 +50,8 @@ read -s -p "Password: " UI_PASS
 echo -e "\n"
 
 CREDENTIAL_FILE="/home/$LUSER/.ui-smbcredentials"
-DIR_U="/mnt/udrive"
-DIR_S="/mnt/sdrive"
+MOUNT_DIR_U="/mnt/udrive"
+MOUNT_DIR_S="/mnt/sdrive"
 ADDR_S="files.uidaho.edu/shared"
 ADDR_U="users.uidaho.edu/users/$(echo "$UI_USER" | head -c 1)/$UI_USER"
 
@@ -68,31 +69,35 @@ sudo chmod 600 $CREDENTIAL_FILE
 # Insert credentials into file
 sudo echo -e "username=$UI_USER\npassword=$UI_PASS" >> $CREDENTIAL_FILE
 echo "To change your password, rerun this script or edit the file directly"
-sleep 3
+sleep 1
 
 # create mount points if they dont exist
 echo -e "\nCreating mount points"
-if [ ! -d "$DIR_U" ]; then
-  echo "Creating mount point $DIR_U"
-  sudo mkdir $DIR_U
+if [ ! -d "$MOUNT_DIR_U" ]; then
+  echo "Creating mount point $MOUNT_DIR_U"
+  sudo mkdir $MOUNT_DIR_U
 else
-  echo "$DIR_U already exists"
+  echo "$MOUNT_DIR_U already exists"
 fi
-if [ ! -d "$DIR_S" ]; then
-  echo "Creating mount point $DIR_S"
-  sudo mkdir $DIR_S
+if [ ! -d "$MOUNT_DIR_S" ]; then
+  echo "Creating mount point $MOUNT_DIR_S"
+  sudo mkdir $MOUNT_DIR_S
 else
-  echo "$DIR_S already exists"
+  echo "$MOUNT_DIR_S already exists"
 fi
+sleep 1
 
-#TODO Install cifs_utils
+
+echo -e "\nInstalling cifs-utils"
+sudo apt-get update -q
+sudo apt-get install cifs-utils || echo -e "\nInstalling cifs-utils failed. Please try manually installing cifs-utils"; exit
 
 # this works for command line:
 #sudo mount -t cifs //files.uidaho.edu/shared /mnt/sdrive -o credentials=/home/nick/GitRepos/Uidaho-its-scripts/ui-smbcredentials -rw
 
 echo -e "\nCreating mount entry in /etc/fstab"
-MOUNTCODE_U="//$ADDR_U $DIR_U cifs credentials=$CREDENTIAL_FILE,uid=$LUSER,gid=$LUSER 0 0"
-MOUNTCODE_S="//$ADDR_S $DIR_S cifs credentials=$CREDENTIAL_FILE,uid=$LUSER,gid=$LUSER 0 0"
+MOUNTCODE_U="//$ADDR_U $MOUNT_DIR_U cifs credentials=$CREDENTIAL_FILE,uid=$LUSER,gid=$LUSER 0 0"
+MOUNTCODE_S="//$ADDR_S $MOUNT_DIR_S cifs credentials=$CREDENTIAL_FILE,uid=$LUSER,gid=$LUSER 0 0"
 echo "Mountcode U: $MOUNTCODE_U"
 echo "Mountcode S: $MOUNTCODE_S"
 #check if fstab already has this line. if not add it.
@@ -104,12 +109,12 @@ sudo mount -a               # mount the ramdisk
 
 echo -e "\n---------------------------------------"
 echo -e "These are the files in your udrive"
-ls -l $DIR_U
+ls -l $MOUNT_DIR_U
 echo -e "\nThese are the files in your sdrive"
-ls -l $DIR_S
+ls -l $MOUNT_DIR_S
 
 # instructions
 echo "These drives will only auto connect at startup and only when connected to AirVandalGold or ethernet"
 echo "To mount, run the command 'sudo mount -a'
-To mount individually, run 'sudo mount $DIR_S'
-To unmount a drive, run 'sudo umount $DIR_U'
+To mount individually, run 'sudo mount $MOUNT_DIR_S'
+To unmount a drive, run 'sudo umount $MOUNT_DIR_U'"
