@@ -1,7 +1,11 @@
 #!/bin/bash
 
-#http://patorjk.com/software/taag/#p=display&f=Doom&t=UIdaho
-# find replace all ` with \`
+# Instructions
+# Download and save this file
+# Open terminal and navigate to saved location. 
+# If this file is not executable run 'chmod +x linux-add-drives.sh'
+# Run file with './linux-add-drives.sh'
+
 
 # check for root
 if [ $(id -u) != 0 ]; then
@@ -26,10 +30,12 @@ MOUNT_DIR_U="/mnt/udrive"
 MOUNT_DIR_S="/mnt/sdrive"
 ADDR_S="files.uidaho.edu/shared"
 # the function f_get_ui_credentials updates the username for this address
-ADDR_U="udrive address not set"
+ADDR_U="# udrive address not set"
 
 f_Banner()
 {
+  # Banner creator: http://patorjk.com/software/taag/#p=display&f=Doom&t=UIdaho
+  # find replace all ` with \`
   echo "
    _   _ _____    _       _
   | | | |_   _|  | |     | |
@@ -44,7 +50,7 @@ f_Banner()
   This script will preform the following opperations:
   * Ask for root. (required for some operations)
   * Ask user for information
-  * Create a credential file at /home/$USER/.ui-smbcredentials for storying your ui username and password
+  * Create a credential file at /home/$USER/.ui-smbcredentials for storing your ui username and password
   * Create directories: /mnt/udrive /mnt/sdrive for mount points
   * Change permissions on that file to be only viewable by root for security
   * Install cifs_utils. (required for mounting window's shares)
@@ -73,7 +79,6 @@ f_get_ui_credentials()
 
 
 
-
 f_create_credential_file()
 {
   echo -e "\nCreating credential file at $CREDENTIAL_FILE"
@@ -90,6 +95,7 @@ f_create_credential_file()
   # Insert credentials into file
   sudo echo -e "username=$UI_USER\npassword=$UI_PASS" >> $CREDENTIAL_FILE
 }
+
 
 # create mount points if they dont exist
 f_create_mountpoints()
@@ -114,7 +120,7 @@ f_install_cifs()
 {
   echo -e "\nInstalling cifs-utils"
   sudo apt-get update -q
-#  sudo apt-get install cifs-utils || echo -e "\nInstalling cifs-utils failed. Please try manually installing cifs-utils"; exit
+  sudo apt-get install cifs-utils # || echo -e "\nInstalling cifs-utils failed. Please try manually installing cifs-utils"; exit
   echo "cifs-utils installation complete"
 }
 
