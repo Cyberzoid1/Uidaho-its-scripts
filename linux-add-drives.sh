@@ -7,19 +7,6 @@
 # Run file with './linux-add-drives.sh'
 
 
-# check for root
-if [ $(id -u) != 0 ]; then
-    echo "Need root"
-    sudo sh -c "$0 $@"
-    exit
-fi
-
-# double check before continuing
-if [ $(id -u) != 0 ]; then
-    echo "You are NOT root"
-    exit
-fi
-
 
 # get local username
 LUSER=${SUDO_USER:-$USER}
@@ -37,7 +24,7 @@ ADDR_U="# udrive address not set"
 f_Banner()
 {
   # Banner creator: http://patorjk.com/software/taag/#p=display&f=Doom&t=UIdaho
-  # find replace all ` with \`
+  # will need to find replace all ` with \`
   echo "
    _   _ _____    _       _
   | | | |_   _|  | |     | |
@@ -50,19 +37,46 @@ f_Banner()
   This script will mount the shared drive and userdrive to the user's computer
 
   This script will preform the following opperations:
-  * Ask for root. (required for some operations)
+  * Ask for root. (required for most operations)
   * Ask user for information
   * Create a credential file at /home/$USER/.ui-smbcredentials for storing your ui username and password
   * Create directories: /mnt/udrive /mnt/sdrive for mount points
-  * Change permissions on that file to be only viewable by root for security
-  * Install cifs_utils. (required for mounting window's shares)
+  * Change permissions on credential file to be only viewable by root for added security
+  * Install cifs_utils. (required for mounting drives)
   * Add a configuration line in /etc/fstab for mounting the drives"
 
   # instructions
-  echo "These drives will only auto connect at startup and only when connected to AirVandalGold or ethernet"
-  echo "To mount, run the command 'sudo mount -a'
+  echo "These drives will only auto connect at startup and only when connected to AirVandalGold or Ethernet
+  
+  To mount, run the command 'sudo mount -a'
   To mount individually, run 'sudo mount $MOUNT_DIR_S'
-  To unmount a drive, run 'sudo umount $MOUNT_DIR_U'"
+  To unmount a drive, run 'sudo umount $MOUNT_DIR_U'
+  To update your password, run script with -p flag. '$0 -p'"
+  
+  read -r -p "Do you want to continue? [y/N] " response
+  if [[ !("$response" =~ ^([yY][eE][sS]|[yY])+$) ]]
+  then
+     echo "Exiting"
+     exit
+  fi
+}
+
+# checks for root.
+f_rootcheck()
+{
+  # check for root
+  if [ $(id -u) != 0 ]; then
+      echo "Need root"
+      args="$@ --nobanner"   # append no banenr flag to args
+      sudo sh -c "$0 $args"  # call script again with root
+      exit
+  fi
+  
+  # double check before continuing
+  if [ $(id -u) != 0 ]; then
+      echo "You are NOT root"
+      exit
+  fi
 }
 
 
@@ -85,10 +99,10 @@ f_update_password()
 {
   echo -e "\nUpdate Password"
   sudo umount $MOUNT_DIR_U  # unmount drives for new password
-  sudo umount $MOUNTCODE_S
-  echo "What is your new UI Password? (characters will be invisible, hold backspace to clear)"
+  sudo umount $MOUNT_DIR_S
+  echo "What is your current UI Password? (characters will be invisible, hold backspace to clear)"
   read -s -p "Password: " UI_PASS
-  f_get_ui_credentials
+  f_create_credential_file
   f_mount_drives
   f_show_files
 }
@@ -177,12 +191,30 @@ f_show_files()
 f_uninstall()
 {
   echo -e "\nRemoving shared drives and credential file"
-  echo "TODO"
+  # unmount drives
+  sudo umount $MOUNT_DIR_U
+  sudo umount $MOUNTCODE_S
+  
+  # remove credential file if it exists
+  if [ -e $CREDENTIAL_FILE ]; then
+    sudo rm -f $CREDENTIAL_FILE
+  fi
+  
+  #remove mount points
+  rmdir $MOUNT_DIR_U
+  rmdir $MOUNT_DIR_S
+  
+  # remove fstab entries
+  # find the line that matches /mnt/sdrive then delete line
+  sed -i '/\/mnt\/udrive/D' /etc/fstab
+  sed -i '/\/mnt\/sdrive/D' /etc/fstab
+  
 }
 
 
 case $1 in
   -p|--password)
+    f_rootcheck $@
     f_update_password
     ;;
     
@@ -194,12 +226,16 @@ case $1 in
     echo "Version: $VERSION"
     ;;
   uninstall|--uninstall)
+    f_rootcheck $@
     f_uninstall
     ;;
     
-  "")
+  ""|"--nobanner")
     # function calls
-    f_Banner
+    if [[ $@ !=  *'--nobanner'* ]]; then
+      f_Banner $@
+    fi
+    f_rootcheck $@
     f_get_ui_credentials
     f_create_credential_file
     f_install_cifs
@@ -212,7 +248,5 @@ case $1 in
     echo "Unrecognized argument"
     ;;
 esac
-    
-
 
 
