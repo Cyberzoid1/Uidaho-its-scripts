@@ -5,15 +5,14 @@
 # Open terminal and navigate to saved location. 
 # If this file is not executable run 'chmod +x linux-add-drives.sh'
 # Run file with './linux-add-drives.sh'
-
-
+# For password update run './linux-add-drives.sh -p'
 
 # get local username
 LUSER=${SUDO_USER:-$USER}
-#echo "Local User: $LUSER"
 
 # Configuration
-VERSION="0.0.0"
+VERSION="0.1.0"
+LAST_UPDATED="3/21/2018"
 CREDENTIAL_FILE="/home/$LUSER/.ui-smbcredentials"
 MOUNT_DIR_U="/mnt/udrive"
 MOUNT_DIR_S="/mnt/sdrive"
@@ -79,7 +78,6 @@ f_rootcheck()
   fi
 }
 
-
 f_get_ui_credentials()
 {
   # Get UI credentials from user
@@ -93,7 +91,6 @@ f_get_ui_credentials()
   ADDR_U="users.uidaho.edu/users/$(echo "$UI_USER" | head -c 1)/$UI_USER"
 }
 
-
 # only update password
 f_update_password()
 {
@@ -106,7 +103,6 @@ f_update_password()
   f_mount_drives
   f_show_files
 }
-
 
 f_create_credential_file()
 {
@@ -124,7 +120,6 @@ f_create_credential_file()
   # Insert credentials into file
   sudo echo -e "username=$UI_USER\npassword=$UI_PASS" >> $CREDENTIAL_FILE
 }
-
 
 # create mount points if they dont exist
 f_create_mountpoints()
@@ -208,7 +203,6 @@ f_uninstall()
   # find the line that matches /mnt/sdrive then delete line
   sed -i '/\/mnt\/udrive/D' /etc/fstab
   sed -i '/\/mnt\/sdrive/D' /etc/fstab
-  
 }
 
 
@@ -223,7 +217,7 @@ case $1 in
     ;;
     
   -v|--version)
-    echo "Version: $VERSION"
+    echo "Version: $VERSION. Last updated on $LAST_UPDATED"
     ;;
   uninstall|--uninstall)
     f_rootcheck $@
@@ -244,6 +238,7 @@ case $1 in
     f_mount_drives
     f_show_files
     ;;
+    
   *)
     echo "Unrecognized argument"
     ;;
