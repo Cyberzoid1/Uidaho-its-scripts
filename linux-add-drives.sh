@@ -10,7 +10,7 @@
 # check for root
 if [ $(id -u) != 0 ]; then
     echo "Need root"
-    sudo sh -c $0
+    sudo sh -c "$0 $@"
     exit
 fi
 
@@ -20,11 +20,13 @@ if [ $(id -u) != 0 ]; then
     exit
 fi
 
+
 # get local username
 LUSER=${SUDO_USER:-$USER}
-echo "Local User: $LUSER"
+#echo "Local User: $LUSER"
 
 # Configuration
+VERSION="0.0.0"
 CREDENTIAL_FILE="/home/$LUSER/.ui-smbcredentials"
 MOUNT_DIR_U="/mnt/udrive"
 MOUNT_DIR_S="/mnt/sdrive"
@@ -77,6 +79,19 @@ f_get_ui_credentials()
   ADDR_U="users.uidaho.edu/users/$(echo "$UI_USER" | head -c 1)/$UI_USER"
 }
 
+
+# only update password
+f_update_password()
+{
+  echo -e "\nUpdate Password"
+  sudo umount $MOUNT_DIR_U  # unmount drives for new password
+  sudo umount $MOUNTCODE_S
+  echo "What is your new UI Password? (characters will be invisible, hold backspace to clear)"
+  read -s -p "Password: " UI_PASS
+  f_get_ui_credentials
+  f_mount_drives
+  f_show_files
+}
 
 
 f_create_credential_file()
@@ -159,13 +174,45 @@ f_show_files()
   ls $MOUNT_DIR_S
 }
 
+f_uninstall()
+{
+  echo -e "\nRemoving shared drives and credential file"
+  echo "TODO"
+}
 
-# function calls
-f_Banner
-f_get_ui_credentials
-f_create_credential_file
-f_install_cifs
-f_create_mountpoints
-f_update_mountcode
-f_mount_drives
-f_show_files
+
+case $1 in
+  -p|--password)
+    f_update_password
+    ;;
+    
+  -h|--help)
+    f_Banner
+    ;;
+    
+  -v|--version)
+    echo "Version: $VERSION"
+    ;;
+  uninstall|--uninstall)
+    f_uninstall
+    ;;
+    
+  "")
+    # function calls
+    f_Banner
+    f_get_ui_credentials
+    f_create_credential_file
+    f_install_cifs
+    f_create_mountpoints
+    f_update_mountcode
+    f_mount_drives
+    f_show_files
+    ;;
+  *)
+    echo "Unrecognized argument"
+    ;;
+esac
+    
+
+
+
