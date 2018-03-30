@@ -188,7 +188,7 @@ f_uninstall()
   echo -e "\nRemoving shared drives and credential file"
   # unmount drives
   sudo umount $MOUNT_DIR_U
-  sudo umount $MOUNTCODE_S
+  sudo umount $MOUNT_DIR_S
 
   # remove credential file if it exists
   if [ -e $CREDENTIAL_FILE ]; then
