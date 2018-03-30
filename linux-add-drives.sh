@@ -2,7 +2,7 @@
 
 # Instructions
 # Download and save this file
-# Open terminal and navigate to saved location. 
+# Open terminal and navigate to saved location.
 # If this file is not executable run 'chmod +x linux-add-drives.sh'
 # Run file with './linux-add-drives.sh'
 # For password update run './linux-add-drives.sh -p'
@@ -46,12 +46,12 @@ f_Banner()
 
   # instructions
   echo "These drives will only auto connect at startup and only when connected to AirVandalGold or Ethernet
-  
+
   To mount, run the command 'sudo mount -a'
   To mount individually, run 'sudo mount $MOUNT_DIR_S'
   To unmount a drive, run 'sudo umount $MOUNT_DIR_U'
   To update your password, run script with -p flag. '$0 -p'"
-  
+
   read -r -p "Do you want to continue? [y/N] " response
   if [[ !("$response" =~ ^([yY][eE][sS]|[yY])+$) ]]
   then
@@ -70,7 +70,7 @@ f_rootcheck()
       sudo sh -c "$0 $args"  # call script again with root
       exit
   fi
-  
+
   # double check before continuing
   if [ $(id -u) != 0 ]; then
       echo "You are NOT root"
@@ -144,7 +144,7 @@ f_install_cifs()
 {
   echo -e "\nInstalling cifs-utils"
   sudo apt-get update -q
-  sudo apt-get install cifs-utils # || echo -e "\nInstalling cifs-utils failed. Please try manually installing cifs-utils"; exit
+  sudo apt-get install -y cifs-utils # || echo -e "\nInstalling cifs-utils failed. Please try manually installing cifs-utils"; exit
   echo "cifs-utils installation complete"
 }
 
@@ -152,8 +152,8 @@ f_install_cifs()
 f_update_mountcode()
 {
   echo -e "\nCreating mount entry in /etc/fstab"
-  MOUNTCODE_U="//$ADDR_U $MOUNT_DIR_U cifs credentials=$CREDENTIAL_FILE,uid=$LUSER,gid=$LUSER 0 0"
-  MOUNTCODE_S="//$ADDR_S $MOUNT_DIR_S cifs credentials=$CREDENTIAL_FILE,uid=$LUSER,gid=$LUSER 0 0"
+  MOUNTCODE_U="//$ADDR_U $MOUNT_DIR_U cifs vers=3.0,credentials=$CREDENTIAL_FILE,uid=$LUSER,gid=$LUSER 0 0"
+  MOUNTCODE_S="//$ADDR_S $MOUNT_DIR_S cifs vers=3.0,credentials=$CREDENTIAL_FILE,uid=$LUSER,gid=$LUSER 0 0"
   echo "Mountcode U: $MOUNTCODE_U"
   echo "Mountcode S: $MOUNTCODE_S"
 
@@ -189,16 +189,16 @@ f_uninstall()
   # unmount drives
   sudo umount $MOUNT_DIR_U
   sudo umount $MOUNTCODE_S
-  
+
   # remove credential file if it exists
   if [ -e $CREDENTIAL_FILE ]; then
     sudo rm -f $CREDENTIAL_FILE
   fi
-  
+
   #remove mount points
   rmdir $MOUNT_DIR_U
   rmdir $MOUNT_DIR_S
-  
+
   # remove fstab entries
   # find the line that matches /mnt/sdrive then delete line
   sed -i '/\/mnt\/udrive/D' /etc/fstab
@@ -211,11 +211,11 @@ case $1 in
     f_rootcheck $@
     f_update_password
     ;;
-    
+
   -h|--help)
     f_Banner
     ;;
-    
+
   -v|--version)
     echo "Version: $VERSION. Last updated on $LAST_UPDATED"
     ;;
@@ -223,7 +223,7 @@ case $1 in
     f_rootcheck $@
     f_uninstall
     ;;
-    
+
   ""|"--nobanner")
     # function calls
     if [[ $@ !=  *'--nobanner'* ]]; then
@@ -238,10 +238,8 @@ case $1 in
     f_mount_drives
     f_show_files
     ;;
-    
+
   *)
     echo "Unrecognized argument"
     ;;
 esac
-
-
