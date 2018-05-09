@@ -99,9 +99,13 @@ f_update_password()
   sudo umount $MOUNT_DIR_S
   echo "What is your current UI Password? (characters will be invisible, hold backspace to clear)"
   read -s -p "Password: " UI_PASS
-  f_create_credential_file
+  # Delete password line in the credential file
+  sed -i '/password/D' $CREDENTIAL_FILE
+  # Insert new password into credential file
+  sudo echo -e "password=$UI_PASS" >> $CREDENTIAL_FILE
   f_mount_drives
   f_show_files
+  echo "If this failed to mount, run the script @0 without the password flag"
 }
 
 # Create and write UI credentials to a file
@@ -167,7 +171,7 @@ f_update_mountcode()
   grep -q -F "$MOUNT_DIR_S" /etc/fstab || echo "$MOUNTCODE_S" >> /etc/fstab
 }
 
-# executes the mount command
+# Executes the mount command
 f_mount_drives()
 {
   echo -e "\nMounting the drives with the command \"sudo mount -a\""
@@ -178,10 +182,10 @@ f_mount_drives()
 f_show_files()
 {
   echo -e "\n---------------------------------------"
-  echo -e "These are the files in your udrive"
-  ls $MOUNT_DIR_U
-  echo -e "\nThese are the files in your sdrive"
-  ls $MOUNT_DIR_S
+  echo -e "These are the first 10 files in your udrive"
+  ls $MOUNT_DIR_U | head -n 10
+  echo -e "\nThese are the first 10 files in your sdrive"
+  ls $MOUNT_DIR_S | head -n 10
 }
 
 f_uninstall()
@@ -211,6 +215,7 @@ f_helpInfo()
   echo "Usage: $0 [options]"
   echo "     --nobanner		Hides banner text"
   echo "-h   --help		Shows this help dialogue"
+  echo "-ls  --list-files	Show files in mountpoints for testing"
   echo "-p   --password		Update password only"
   echo "-U   --uninstall	Uninstalls the shared drives and configurations"
   echo "-v   --version		Shows version info"
@@ -228,6 +233,9 @@ case $1 in
   -h|--help|help)
     #f_Banner
     f_helpInfo
+    ;;
+  -ls|--list-files)
+    f_show_files
     ;;
   -p|--password)
     f_rootcheck $@
