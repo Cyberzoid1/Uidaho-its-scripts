@@ -11,8 +11,8 @@
 LUSER=${SUDO_USER:-$USER}
 
 # Configuration
-VERSION="0.1.0"
-LAST_UPDATED="3/21/2018"
+VERSION="0.1.1"
+LAST_UPDATED="5/09/2018"
 CREDENTIAL_FILE="/home/$LUSER/.ui-smbcredentials"
 MOUNT_DIR_U="/mnt/udrive"
 MOUNT_DIR_S="/mnt/sdrive"
@@ -44,7 +44,7 @@ f_Banner()
   * Install cifs_utils. (required for mounting drives)
   * Add a configuration line in /etc/fstab for mounting the drives"
 
-  # instructions
+  # Instructions
   echo "These drives will only auto connect at startup and only when connected to AirVandalGold or Ethernet
 
   To mount, run the command 'sudo mount -a'
@@ -60,13 +60,13 @@ f_Banner()
   fi
 }
 
-# checks for root.
+# checks for root. Re-start script with root privliges
 f_rootcheck()
 {
   # check for root
   if [ $(id -u) != 0 ]; then
       echo "Need root"
-      args="$@ --nobanner"   # append no banenr flag to args
+      args="$@ --nobanner"   # append no banner flag to args
       sudo sh -c "$0 $args"  # call script again with root
       exit
   fi
@@ -87,11 +87,11 @@ f_get_ui_credentials()
   echo "What is your UI Password? (characters will be invisible, hold backspace to clear)"
   read -s -p "Password: " UI_PASS
   echo -e "\n"
-  # update udrive address
+  # Update udrive address
   ADDR_U="users.uidaho.edu/users/$(echo "$UI_USER" | head -c 1)/$UI_USER"
 }
 
-# only update password
+# Only update password
 f_update_password()
 {
   echo -e "\nUpdate Password"
@@ -104,6 +104,7 @@ f_update_password()
   f_show_files
 }
 
+# Create and write UI credentials to a file
 f_create_credential_file()
 {
   echo -e "\nCreating credential file at $CREDENTIAL_FILE"
@@ -115,13 +116,13 @@ f_create_credential_file()
   touch $CREDENTIAL_FILE
   # change owner to root
   sudo chown root:root $CREDENTIAL_FILE
-  # change permissions so no one except root can view file
+  # change permissions so no one except root can read the file
   sudo chmod 400 $CREDENTIAL_FILE
   # Insert credentials into file
   sudo echo -e "username=$UI_USER\npassword=$UI_PASS" >> $CREDENTIAL_FILE
 }
 
-# create mount points if they dont exist
+# Create mount points if they dont exist
 f_create_mountpoints()
 {
   echo -e "\nCreating mount points"
@@ -139,7 +140,7 @@ f_create_mountpoints()
   fi
 }
 
-# Installs system dependencies
+# Install system dependencies
 f_install_cifs()
 {
   echo -e "\nInstalling cifs-utils"
@@ -162,7 +163,7 @@ f_update_mountcode()
   sed -i '/\/mnt\/sdrive/D' /etc/fstab
 
   # Add mountcode to fstab if substring is not found
-  grep -F "$MOUNT_DIR_U" /etc/fstab || echo "$MOUNTCODE_U" >> /etc/fstab
+  grep -q -F "$MOUNT_DIR_U" /etc/fstab || echo "$MOUNTCODE_U" >> /etc/fstab
   grep -q -F "$MOUNT_DIR_S" /etc/fstab || echo "$MOUNTCODE_S" >> /etc/fstab
 }
 
@@ -205,26 +206,42 @@ f_uninstall()
   sed -i '/\/mnt\/sdrive/D' /etc/fstab
 }
 
+f_helpInfo()
+{
+  echo "Usage: $0 [options]"
+  echo "     --nobanner		Hides banner text"
+  echo "-h   --help		Shows this help dialogue"
+  echo "-p   --password		Update password only"
+  echo "-U   --uninstall	Uninstalls the shared drives and configurations"
+  echo "-v   --version		Shows version info"
+  echo -e "\n"
+
+  # Instructions
+  echo "To mount, run the command 'sudo mount -a'
+To mount individually, run 'sudo mount $MOUNT_DIR_S'
+To unmount a drive, run 'sudo umount $MOUNT_DIR_U'
+To update your password, run script with -p flag. '$0 -p'"
+}
+
 
 case $1 in
+  -h|--help|help)
+    #f_Banner
+    f_helpInfo
+    ;;
   -p|--password)
     f_rootcheck $@
     f_update_password
     ;;
-
-  -h|--help)
-    f_Banner
-    ;;
-
-  -v|--version)
+  -v|--version|version)
     echo "Version: $VERSION. Last updated on $LAST_UPDATED"
     ;;
-  uninstall|--uninstall)
+  -U|uninstall|--uninstall|remove|--remove)
     f_rootcheck $@
     f_uninstall
     ;;
 
-  ""|"--nobanner")
+  ""|"--nobanner") # normal call
     # function calls
     if [[ $@ !=  *'--nobanner'* ]]; then
       f_Banner $@
@@ -241,5 +258,6 @@ case $1 in
 
   *)
     echo "Unrecognized argument"
+    f_helpInfo
     ;;
 esac
