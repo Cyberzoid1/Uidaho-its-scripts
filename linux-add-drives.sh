@@ -147,10 +147,24 @@ f_create_mountpoints()
 # Install system dependencies
 f_install_cifs()
 {
-  echo -e "\nInstalling cifs-utils"
-  sudo apt-get update -q
-  sudo apt-get install -y cifs-utils # || echo -e "\nInstalling cifs-utils failed. Please try manually installing cifs-utils"; exit
-  echo "cifs-utils installation complete"
+  echo -e "\n"
+  /usr/bin/dpkg-query --show --showformat='${db:Status-Status}\n' 'cifs-utils' | grep -q 'installed'
+  if [ $? == 0 ]; then
+    echo "Dependancy: cifs-utils installed"
+  else
+    echo "Dependancy: cifs-utils not installed. Installing now"
+	sudo apt-get update -q
+    sudo apt-get install -y cifs-utils
+	
+	# Check if successfull
+    /usr/bin/dpkg-query --show --showformat='${db:Status-Status}\n' 'cifs-utils' | grep -q 'installed'
+    if [ $? == 0 ]; then
+      echo "cifs-utils installation complete"
+	else
+      echo "cifs-utils failed to install. Please try to install cifs-utils manually"
+	  sleep 2
+    fi
+  fi
 }
 
 # Creates and updates system configurations for mounting the drives
