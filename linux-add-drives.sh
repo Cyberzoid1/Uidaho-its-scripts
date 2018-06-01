@@ -28,29 +28,31 @@ f_Banner()
    _   _ _____    _       _
   | | | |_   _|  | |     | |
   | | | | | |  __| | __ _| |__   ___
-  | | | | | | / _\` |/ _\` | '_  \ / _ \\
+  | | | | | | / _\` |/ _\` | '_ \ / _ \\
   | |_| |_| || (_| | (_| | | | | (_) |
    \___/ \___/\__,_|\__,_|_| |_|\___/
   "
   echo "
-  This script will mount the shared drive and userdrive to the user's computer
+This script will mount the shared drive and userdrive to the user's computer
 
   This script will preform the following opperations:
   * Ask for root. (required for most operations)
   * Ask user for information
   * Create a credential file at /home/$USER/.ui-smbcredentials for storing your ui username and password
-  * Create directories: /mnt/udrive /mnt/sdrive for mount points
   * Change permissions on credential file to be only viewable by root for added security
+  * Create directories: /mnt/udrive /mnt/sdrive for mount points
   * Install cifs_utils. (required for mounting drives)
-  * Add a configuration line in /etc/fstab for mounting the drives"
+  * Add a configuration line in /etc/fstab for mounting the drives
+  * Mount the drives"
 
   # Instructions
-  echo "These drives will only auto connect at startup and only when connected to AirVandalGold or Ethernet
-
-  To mount, run the command 'sudo mount -a'
+  echo "
+These drives will only auto connect at startup and only when connected to AirVandalGold or Ethernet
+  To mount manually, run the command 'sudo mount -a'
   To mount individually, run 'sudo mount $MOUNT_DIR_S'
   To unmount a drive, run 'sudo umount $MOUNT_DIR_U'
-  To update your password, run script with -p flag. '$0 -p'"
+  To update your password, run script with -p flag. '$0 -p'
+  To display these instructions type $0 --help"
 
   read -r -p "Do you want to continue? [y/N] " response
   if [[ !("$response" =~ ^([yY][eE][sS]|[yY])+$) ]]
@@ -204,6 +206,12 @@ f_show_files()
 
 f_uninstall()
 {
+  read -r -p "Do you want to remove the User drive and Shared drive? [y/N] " response
+  if [[ !("$response" =~ ^([yY][eE][sS]|[yY])+$) ]]
+  then
+     echo "Exiting"
+     exit
+  fi
   echo -e "\nRemoving shared drives and credential file"
   # unmount drives
   sudo umount $MOUNT_DIR_U
@@ -239,10 +247,12 @@ f_helpInfo()
   echo "To mount, run the command 'sudo mount -a'
 To mount individually, run 'sudo mount $MOUNT_DIR_S'
 To unmount a drive, run 'sudo umount $MOUNT_DIR_U'
-To update your password, run script with -p flag. '$0 -p'"
+To update your password, run script with -p flag. '$0 -p'
+To display these instructions type $0 --help"
 }
 
 
+# main
 case $1 in
   -h|--help|help)
     #f_Banner
@@ -264,7 +274,6 @@ case $1 in
     ;;
 
   ""|"--nobanner") # normal call
-    # function calls
     if [[ $@ !=  *'--nobanner'* ]]; then
       f_Banner $@
     fi
