@@ -1,6 +1,14 @@
 #!/bin/bash
 
-echo "TODO check mac address setting"
+echo "#TODO================================================================"
+echo "Banner"
+echo "password only"
+echo "check mac address setting"
+echo "Airvandal home option"
+echo "better wifi load instead of restart service"
+echo "wifi connection check"
+echo "For removal test if connected to AVGuest to use nmcli con down AirVandalGuest"
+echo "#END TODO============================================================"
 echo ""
 
 # --Settings -------------------------------------
@@ -14,6 +22,9 @@ CERT_NAME="Root-USERTrust.crt"
 CERT_DESTINATION="/etc/ssl/certs"
 # ------------------------------------------------
 
+
+# removed line: mac-address=24:77:03:3A:74:10
+#NotSet
 AirVandalGold_Conf="""
 [connection]
 id=AirVandalGold
@@ -87,6 +98,41 @@ jjxDah2nGN59PRbxYvnKkKj9
 -----END CERTIFICATE-----
 """
 
+
+f_Banner()
+{
+  # Banner creator: http://patorjk.com/software/taag/#p=display&f=Doom&t=UIdaho
+  # will need to find replace all ` with \`
+  echo "
+   _   _ _____    _       _
+  | | | |_   _|  | |     | |
+  | | | | | |  __| | __ _| |__   ___
+  | | | | | | / _\` |/ _\` | '_ \ / _ \\
+  | |_| |_| || (_| | (_| | | | | (_) |
+   \___/ \___/\__,_|\__,_|_| |_|\___/
+  "
+  echo "
+This script will add AirVandalGold to an Ubuntu based system.
+
+  This script will preform the following opperations:
+  * Ask for root. (required for most operations)
+  * Ask user for information"
+
+  # Instructions
+  echo "
+  To update your password, run script with -p flag. '$0 -p'
+  To display these instructions type $0 --help"
+
+  read -r -p "Do you want to continue? [y/N] " response
+  if [[ !("$response" =~ ^([yY][eE][sS]|[yY])+$) ]]
+  then
+     echo "Exiting"
+     exit
+  fi
+}
+
+
+
 # checks for root. Re-start script with root privliges
 f_rootcheck()
 {
@@ -121,6 +167,12 @@ f_get_ui_credentials()
   AirVandalGold_Conf="$(echo "$AirVandalGold_Conf" | sed -e "s/password=NotSet/password=$UI_PASS/g")"
 }
 
+# Only update password
+f_update_password()
+{
+ echo "TODO not implemented"
+}
+
 
 # This function copies the network configuration file and restarts the Network Manager service to apply
 f_WriteWiFiConfig()
@@ -144,8 +196,18 @@ f_WriteWiFiConfig()
   fi
 
   # restart network manager
-  echo "Restarting Network Manager"
-  sudo systemctl restart NetworkManager
+  #echo "Restarting Network Manager"
+  #sudo systemctl restart NetworkManager
+  
+  
+  nmcli radio wifi on
+  echo "--Reload--------------------------"
+  nmcli connection reload         # Reload all connections files from disk.
+  echo "--Connect-------------------------"
+  nmcli device wifi connect AirVandalGold
+  echo "--Status--------------------------"
+  nmcli general status
+  nmcli connection show
 }
 
 
@@ -158,10 +220,12 @@ f_removeAVGuest()
   if [ -e $AirVandalGuest_CONF_PATH ]; then
     echo -e "\nAirVandalGuest network configuration was found."
     echo "We recommend removing this network from your system as AirVandalGuest is slower and some UI sites are not accessable on this network."
+    echo "AirVandalGold is prefered for Students, Staff & Faculty"
     read -r -p "Would you like to remove this network? [y/N] " response
     if [[ ("$response" =~ ^([yY][eE][sS]|[yY])+$) ]]
     then
-       sudo rm -v $AirVandalGuest_CONF_PATH     # Remove if yes
+       #sudo rm -v $AirVandalGuest_CONF_PATH     # Remove if yes
+       nmcli connection delete AirVandalGold  # Delete this configured connection
     else
       echo "   Keeping AirVandalGuest"          # Keep
     fi
@@ -171,23 +235,122 @@ f_removeAVGuest()
 # This function test and removes AirVandalGold from system.
 f_removeAVGold()
 {
-  AirVandalGuest_CONF_PATH="/etc/NetworkManager/system-connections/AirVandalGuest"
+  AirVandalGold_CONF_PATH="/etc/NetworkManager/system-connections/AirVandalGold"
   
   # Test if it exists
-  if [ -e $AirVandalGuest_CONF_PATH ]; then
-    echo -e "\nAirVandalGold network configuration was found - Removing."
-    sudo rm -v $WIFI_CONF_PATH
+  if [ -e $AirVandalGold_CONF_PATH ]; then
+    #echo -e "\nAirVandalGold network configuration was found - Removing."
+    #sudo rm -v $WIFI_CONF_PATH
+    nmcli connection delete AirVandalGold  # Delete this configured connection
   else
     echo -e "\nAirVandalGold not found"
   fi
 }
 
 
-# Main
+f_testConnection()
+{
+  echo -e "\n---Pinging google.com--------------"
+  ping -W 3 -c 2 google.com
+}
 
-f_rootcheck
-f_get_ui_credentials
-sudo echo "$CERTIFICATE" > $CERT_DESTINATION/$CERT_NAME
-f_WriteWiFiConfig
-f_removeAVGuest
-echo done
+# Status of Network Manager
+f_status()
+{
+  echo -e "\n---Status--------------------------"
+  nmcli general status
+  nmcli connection show
+  
+}
+
+
+f_helpInfo()
+{
+  echo "Usage: $0 [options]"
+  echo "     --nobanner		Hides banner text"
+  echo "-h   --help		Shows this help dialogue"
+  echo "-p   --password		Update password only"
+  echo "-s   --status     Show connection status"
+  echo "-t   --test       Test connection & show connection status"
+  echo "-U   --uninstall	Uninstalls the shared drives and configurations"
+  echo "-v   --version		Shows version info"
+  echo -e "\n"
+
+  # Instructions
+  echo "To update your password, run script with -p flag. '$0 -p'
+To display these instructions type $0 --help"
+}
+
+
+# main
+case $1 in
+  -h|--help|help)
+    #f_Banner
+    f_helpInfo
+    ;;
+  -p|--password)
+    f_rootcheck $@
+    f_update_password
+    ;;
+  -s| --status)
+    f_status
+    ;;
+  -t| --test)
+    f_status
+    f_testConnection
+    ;;
+  -U|uninstall|--uninstall|remove|--remove)
+    f_rootcheck $@
+    f_removeAVGuest
+    f_removeAVGold
+    ;;
+  -v|--version|version)
+    echo "Version: $VERSION. Last updated on $LAST_UPDATED"
+    ;;
+
+  ""|"--nobanner") # normal call
+    if [[ $@ !=  *'--nobanner'* ]]; then
+      f_Banner $@
+    fi
+    f_rootcheck $@
+    #f_get_ui_credentials
+    echo "**UI Credentials hard coded"
+    sudo echo "$CERTIFICATE" > $CERT_DESTINATION/$CERT_NAME
+    f_WriteWiFiConfig
+    f_removeAVGuest
+    echo done
+    ;;
+
+  *)
+    echo "Unrecognized argument"
+    f_helpInfo
+    ;;
+esac
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
